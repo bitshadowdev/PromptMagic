@@ -544,3 +544,5 @@ Now, when you click on a file in the tree, you should see (seleccionado) appear 
 
 Please run the application and check the console output when you click on files. This should help us pinpoint if the FileNode is being correctly selected and its content loaded.
 ````
+
+
