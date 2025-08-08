@@ -4,12 +4,14 @@ import os
 from src.core.emoji_assigner import EmojiAssigner
 from src.core.app_state import AppState
 from src.core.file_tree import FileTree
+from src.core.language_manager import LanguageManager
 
 class FileSelectionView:
     def __init__(self, parent):
         self.parent = parent
         self.frame = ttk.Frame(parent)
         self.state = AppState()
+        self.lang = LanguageManager()
         self.path_to_item_id = {}
 
         path_frame = ttk.Frame(self.frame)
@@ -18,17 +20,17 @@ class FileSelectionView:
         self.path_input = ttk.Entry(path_frame)
         self.path_input.pack(fill=tk.X, expand=True, side=tk.LEFT, padx=(0, 5))
 
-        browse_button = ttk.Button(path_frame, text="Browse...", command=self.open_folder_dialog)
+        browse_button = ttk.Button(path_frame, text=self.lang.get_string("BUTTON_BROWSE"), command=self.open_folder_dialog)
         browse_button.pack(side=tk.LEFT)
         
         tree_frame = ttk.Frame(self.frame)
         tree_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=(0, 5))
 
         self.tree = ttk.Treeview(tree_frame, columns=('selected',), show='tree headings')
-        self.tree.heading('#0', text='Name')
+        self.tree.heading('#0', text=self.lang.get_string("HEADER_NAME"))
         self.tree.column("#0", width=400, anchor='w')
         
-        self.tree.heading('selected', text='Selected')
+        self.tree.heading('selected', text=self.lang.get_string("HEADER_SELECTED"))
         self.tree.column("selected", width=80, anchor='center', stretch=tk.NO)
 
         v_scroll = ttk.Scrollbar(tree_frame, orient="vertical", command=self.tree.yview)
@@ -39,13 +41,11 @@ class FileSelectionView:
         h_scroll.pack(side=tk.BOTTOM, fill=tk.X)
         self.tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         
-        parent.add(self.frame, text="Select Files")
+        parent.add(self.frame, text=self.lang.get_string("TAB_SELECT_FILES"))
 
         self.tree.bind("<Button-1>", self.on_tree_click)
         
         self.populate_tree(os.path.abspath('.'))
-    
-    # El método deselect_by_extensions se elimina de aquí, ya que no es necesario.
 
     def open_folder_dialog(self):
         folder_path = filedialog.askdirectory()

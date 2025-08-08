@@ -2,14 +2,16 @@ import tkinter as tk
 from tkinter import ttk
 import os
 from src.core.app_state import AppState
+from src.core.language_manager import LanguageManager
 
 class ResultView:
     def __init__(self, parent, content, prompt_template, main_root, main_window_instance):
         self.parent = parent
         self.frame = ttk.Frame(parent)
         self.content = content
-        self.prompt_template = prompt_template # Guardamos la plantilla original
+        self.prompt_template = prompt_template
         self.state = AppState()
+        self.lang = LanguageManager()
         self.main_root = main_root
         self.main_window_instance = main_window_instance
         
@@ -21,33 +23,29 @@ class ResultView:
         button_frame = ttk.Frame(self.frame)
         button_frame.pack(fill="x", padx=10, pady=5, side="bottom")
 
-        exit_button = ttk.Button(button_frame, text="Salir", command=self.exit_app)
+        exit_button = ttk.Button(button_frame, text=self.lang.get_string("BUTTON_EXIT"), command=self.exit_app)
         exit_button.pack(side="right")
 
-        new_prompt_button = ttk.Button(button_frame, text="Crear otro prompt", command=self.create_new_prompt)
+        new_prompt_button = ttk.Button(button_frame, text=self.lang.get_string("BUTTON_CREATE_NEW"), command=self.create_new_prompt)
         new_prompt_button.pack(side="left")
 
-        prev_button = ttk.Button(button_frame, text="Anterior", command=self.go_back)
+        prev_button = ttk.Button(button_frame, text=self.lang.get_string("BUTTON_PREVIOUS"), command=self.go_back)
         prev_button.pack(side="left", padx=5)
 
-        copy_button = ttk.Button(button_frame, text="Copiar", command=self.copy_to_clipboard)
+        copy_button = ttk.Button(button_frame, text=self.lang.get_string("BUTTON_COPY"), command=self.copy_to_clipboard)
         copy_button.pack(side="left")
         
-        # --- ¡Nuevo! Botón de Refrescar ---
-        refresh_button = ttk.Button(button_frame, text="Refrescar", command=self.refresh_prompt)
+        refresh_button = ttk.Button(button_frame, text=self.lang.get_string("BUTTON_REFRESH"), command=self.refresh_prompt)
         refresh_button.pack(side="left", padx=5)
         
     def refresh_prompt(self):
-        """Recarga el contenido de los archivos seleccionados y actualiza el prompt."""
         print("DEBUG: Botón 'Refrescar' presionado.")
         
-        # 1. Cargar las rutas desde el archivo temporal
         paths = self.state.temp_storage.load_selected_paths()
         if not paths:
             print("DEBUG: No hay rutas para refrescar.")
             return
             
-        # 2. Volver a leer cada archivo y construir el contenido markdown
         markdown_parts = []
         for path in paths:
             try:
@@ -60,11 +58,9 @@ class ResultView:
                 print(f"DEBUG: No se pudo refrescar el archivo {path}: {e}")
                 markdown_parts.append(f'**`{path}`**\n\n```\nError al refrescar el archivo: {e}\n```')
 
-        # 3. Reconstruir el prompt final
         new_context = "\n\n".join(markdown_parts)
         self.content = self.prompt_template.replace("{context}", new_context)
         
-        # 4. Actualizar el área de texto
         self.text_area.config(state="normal")
         self.text_area.delete("1.0", tk.END)
         self.text_area.insert("1.0", self.content)
@@ -82,9 +78,15 @@ class ResultView:
         print("DEBUG: Botón 'Anterior' presionado.")
         self.parent.destroy()
         top = tk.Toplevel(self.main_root)
-        top.title("Compose Prompt")
+        top.title(self.lang.get_string("TITLE_COMPOSE_PROMPT"))
         top.geometry("800x600")
-        prompt_view = PromptView(top, self.main_root, self.main_window_instance)
+        
+        # Necesitamos volver a generar el contexto para la vista anterior
+        final_selected_files = self.state.file_tree.get_selected_files()
+        markdown_parts = [node.to_markdown() for node in final_selected_files]
+        context_content = "\n\n".join(markdown_parts)
+
+        prompt_view = PromptView(top, context_content, self.main_root, self.main_window_instance)
         prompt_view.frame.pack(fill="both", expand=True)
 
     def create_new_prompt(self):
@@ -97,5 +99,5 @@ class ResultView:
         
     def exit_app(self):
         print("DEBUG: Botón 'Salir' presionado.")
-        self.state.temp_storage.cleanup() # Asegurarse de limpiar al salir
+        self.state.temp_storage.cleanup()
         self.main_root.quit()
