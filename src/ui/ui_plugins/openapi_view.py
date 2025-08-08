@@ -1,33 +1,43 @@
-import tkinter as tk
-from tkinter import ttk, Toplevel, Entry, Button
-from src.plugins.openapi.openapi_plugin import OpenAPIPlugin
+import ttkbootstrap as tkb
+from tkinter import Listbox # ¡Importamos Listbox directamente desde tkinter!
 from src.core.language_manager import LanguageManager
+from src.core.app_state import AppState
+from src.plugins.openapi.openapi_plugin import OpenAPIPlugin
+import os
 
 class OpenAPIView:
     def __init__(self, parent):
         self.parent = parent
-        self.frame = ttk.Frame(parent)
+        self.frame = tkb.Frame(parent)
         self.lang = LanguageManager()
-        self.listbox = tk.Listbox(self.frame)
-        self.listbox.pack(pady=10, padx=10, fill=tk.BOTH, expand=True)
+        self.state = AppState()
+        
+        # --- ¡Corrección! Usamos el Listbox de tkinter ---
+        # ttkbootstrap aplicará el estilo del tema automáticamente.
+        self.listbox = Listbox(self.frame) 
+        self.listbox.pack(pady=10, padx=10, fill="both", expand=True)
 
         self.plugin = OpenAPIPlugin()
 
-        button_frame = ttk.Frame(self.frame)
-        button_frame.pack(fill=tk.X, side=tk.BOTTOM, pady=5)
+        button_frame = tkb.Frame(self.frame)
+        button_frame.pack(fill="x", side="bottom", pady=5)
 
-        add_button = ttk.Button(button_frame, text=self.lang.get_string("BUTTON_ADD"), command=self.add_spec)
-        add_button.pack(side=tk.LEFT, padx=5)
+        add_button = tkb.Button(button_frame, text=self.lang.get_string("BUTTON_ADD"), command=self.add_spec, bootstyle="primary")
+        add_button.pack(side="left", padx=5)
 
-        remove_button = ttk.Button(button_frame, text=self.lang.get_string("BUTTON_REMOVE"), command=self.remove_spec)
-        remove_button.pack(side=tk.LEFT)
+        remove_button = tkb.Button(button_frame, text=self.lang.get_string("BUTTON_REMOVE"), command=self.remove_spec, bootstyle="danger")
+        remove_button.pack(side="left")
 
         parent.add(self.frame, text=self.lang.get_string("TAB_OPENAPI"))
 
     def add_spec(self):
-        top = Toplevel(self.frame)
+        top = tkb.Toplevel(self.frame)
+        
+        if self.state.icon_path and os.path.exists(self.state.icon_path):
+            top.iconbitmap(self.state.icon_path)
+            
         top.title(self.lang.get_string("TITLE_ADD_SPEC"))
-        entry = Entry(top, width=50)
+        entry = tkb.Entry(top, width=50)
         entry.pack(padx=10, pady=10)
 
         def add():
@@ -35,10 +45,10 @@ class OpenAPIView:
             if url:
                 spec = self.plugin.get_openapi_spec(url)
                 if spec:
-                    self.listbox.insert(tk.END, url)
+                    self.listbox.insert(tkb.END, url)
                     top.destroy()
 
-        add_button = Button(top, text=self.lang.get_string("BUTTON_ADD"), command=add)
+        add_button = tkb.Button(top, text=self.lang.get_string("BUTTON_ADD"), command=add, bootstyle="success")
         add_button.pack(pady=5)
 
     def remove_spec(self):

@@ -14,6 +14,7 @@ class AppState:
             cls._instance.file_tree = FileTree()
             cls._instance.prompt_template = ""
             cls._instance.temp_storage = TempStorage()
+            cls._instance.icon_path = "" # ¡Nuevo! Atributo para la ruta del ícono
         return cls._instance
     
     def reset(self):

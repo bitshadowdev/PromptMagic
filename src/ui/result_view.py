@@ -1,5 +1,5 @@
-import tkinter as tk
-from tkinter import ttk
+import ttkbootstrap as tkb
+from tkinter import Text
 import os
 from src.core.app_state import AppState
 from src.core.language_manager import LanguageManager
@@ -7,7 +7,7 @@ from src.core.language_manager import LanguageManager
 class ResultView:
     def __init__(self, parent, content, prompt_template, main_root, main_window_instance):
         self.parent = parent
-        self.frame = ttk.Frame(parent)
+        self.frame = tkb.Frame(parent)
         self.content = content
         self.prompt_template = prompt_template
         self.state = AppState()
@@ -15,27 +15,27 @@ class ResultView:
         self.main_root = main_root
         self.main_window_instance = main_window_instance
         
-        self.text_area = tk.Text(self.frame, wrap="word")
+        self.text_area = Text(self.frame, wrap="word", relief="flat")
         self.text_area.pack(padx=10, pady=10, fill="both", expand=True)
         self.text_area.insert("1.0", self.content)
         self.text_area.config(state="disabled")
 
-        button_frame = ttk.Frame(self.frame)
+        button_frame = tkb.Frame(self.frame)
         button_frame.pack(fill="x", padx=10, pady=5, side="bottom")
 
-        exit_button = ttk.Button(button_frame, text=self.lang.get_string("BUTTON_EXIT"), command=self.exit_app)
+        exit_button = tkb.Button(button_frame, text=self.lang.get_string("BUTTON_EXIT"), command=self.exit_app, bootstyle="danger")
         exit_button.pack(side="right")
 
-        new_prompt_button = ttk.Button(button_frame, text=self.lang.get_string("BUTTON_CREATE_NEW"), command=self.create_new_prompt)
+        new_prompt_button = tkb.Button(button_frame, text=self.lang.get_string("BUTTON_CREATE_NEW"), command=self.create_new_prompt, bootstyle="success")
         new_prompt_button.pack(side="left")
 
-        prev_button = ttk.Button(button_frame, text=self.lang.get_string("BUTTON_PREVIOUS"), command=self.go_back)
+        prev_button = tkb.Button(button_frame, text=self.lang.get_string("BUTTON_PREVIOUS"), command=self.go_back)
         prev_button.pack(side="left", padx=5)
 
-        copy_button = ttk.Button(button_frame, text=self.lang.get_string("BUTTON_COPY"), command=self.copy_to_clipboard)
+        copy_button = tkb.Button(button_frame, text=self.lang.get_string("BUTTON_COPY"), command=self.copy_to_clipboard, bootstyle="info")
         copy_button.pack(side="left")
         
-        refresh_button = ttk.Button(button_frame, text=self.lang.get_string("BUTTON_REFRESH"), command=self.refresh_prompt)
+        refresh_button = tkb.Button(button_frame, text=self.lang.get_string("BUTTON_REFRESH"), command=self.refresh_prompt)
         refresh_button.pack(side="left", padx=5)
         
     def refresh_prompt(self):
@@ -62,7 +62,7 @@ class ResultView:
         self.content = self.prompt_template.replace("{context}", new_context)
         
         self.text_area.config(state="normal")
-        self.text_area.delete("1.0", tk.END)
+        self.text_area.delete("1.0", tkb.END)
         self.text_area.insert("1.0", self.content)
         self.text_area.config(state="disabled")
         print("DEBUG: El prompt ha sido refrescado con el contenido actualizado de los archivos.")
@@ -77,11 +77,15 @@ class ResultView:
         from src.ui.prompt_view import PromptView
         print("DEBUG: Botón 'Anterior' presionado.")
         self.parent.destroy()
-        top = tk.Toplevel(self.main_root)
+        top = tkb.Toplevel(self.main_root)
+
+        # Aplicamos el ícono a la nueva ventana
+        if self.state.icon_path and os.path.exists(self.state.icon_path):
+            top.iconbitmap(self.state.icon_path)
+
         top.title(self.lang.get_string("TITLE_COMPOSE_PROMPT"))
         top.geometry("800x600")
         
-        # Necesitamos volver a generar el contexto para la vista anterior
         final_selected_files = self.state.file_tree.get_selected_files()
         markdown_parts = [node.to_markdown() for node in final_selected_files]
         context_content = "\n\n".join(markdown_parts)

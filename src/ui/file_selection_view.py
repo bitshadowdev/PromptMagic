@@ -1,5 +1,5 @@
-import tkinter as tk
-from tkinter import ttk, filedialog
+import ttkbootstrap as tkb
+from tkinter import filedialog
 import os
 from src.core.emoji_assigner import EmojiAssigner
 from src.core.app_state import AppState
@@ -9,37 +9,37 @@ from src.core.language_manager import LanguageManager
 class FileSelectionView:
     def __init__(self, parent):
         self.parent = parent
-        self.frame = ttk.Frame(parent)
+        self.frame = tkb.Frame(parent)
         self.state = AppState()
         self.lang = LanguageManager()
         self.path_to_item_id = {}
 
-        path_frame = ttk.Frame(self.frame)
-        path_frame.pack(fill=tk.X, padx=5, pady=5)
+        path_frame = tkb.Frame(self.frame)
+        path_frame.pack(fill="x", padx=5, pady=5)
 
-        self.path_input = ttk.Entry(path_frame)
-        self.path_input.pack(fill=tk.X, expand=True, side=tk.LEFT, padx=(0, 5))
+        self.path_input = tkb.Entry(path_frame)
+        self.path_input.pack(fill="x", expand=True, side="left", padx=(0, 5))
 
-        browse_button = ttk.Button(path_frame, text=self.lang.get_string("BUTTON_BROWSE"), command=self.open_folder_dialog)
-        browse_button.pack(side=tk.LEFT)
+        browse_button = tkb.Button(path_frame, text=self.lang.get_string("BUTTON_BROWSE"), command=self.open_folder_dialog)
+        browse_button.pack(side="left")
         
-        tree_frame = ttk.Frame(self.frame)
-        tree_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=(0, 5))
+        tree_frame = tkb.Frame(self.frame)
+        tree_frame.pack(fill="both", expand=True, padx=5, pady=(0, 5))
 
-        self.tree = ttk.Treeview(tree_frame, columns=('selected',), show='tree headings')
+        self.tree = tkb.Treeview(tree_frame, columns=('selected',), show='tree headings')
         self.tree.heading('#0', text=self.lang.get_string("HEADER_NAME"))
         self.tree.column("#0", width=400, anchor='w')
         
         self.tree.heading('selected', text=self.lang.get_string("HEADER_SELECTED"))
-        self.tree.column("selected", width=80, anchor='center', stretch=tk.NO)
+        self.tree.column("selected", width=80, anchor='center', stretch=tkb.NO)
 
-        v_scroll = ttk.Scrollbar(tree_frame, orient="vertical", command=self.tree.yview)
-        h_scroll = ttk.Scrollbar(tree_frame, orient="horizontal", command=self.tree.xview)
+        v_scroll = tkb.Scrollbar(tree_frame, orient="vertical", command=self.tree.yview, bootstyle="round")
+        h_scroll = tkb.Scrollbar(tree_frame, orient="horizontal", command=self.tree.xview, bootstyle="round")
         self.tree.configure(yscrollcommand=v_scroll.set, xscrollcommand=h_scroll.set)
 
-        v_scroll.pack(side=tk.RIGHT, fill=tk.Y)
-        h_scroll.pack(side=tk.BOTTOM, fill=tk.X)
-        self.tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        v_scroll.pack(side="right", fill="y")
+        h_scroll.pack(side="bottom", fill="x")
+        self.tree.pack(side="left", fill="both", expand=True)
         
         parent.add(self.frame, text=self.lang.get_string("TAB_SELECT_FILES"))
 
@@ -47,6 +47,7 @@ class FileSelectionView:
         
         self.populate_tree(os.path.abspath('.'))
 
+    # ... (el resto de los métodos de la clase no cambian)
     def open_folder_dialog(self):
         folder_path = filedialog.askdirectory()
         if folder_path:
@@ -94,7 +95,7 @@ class FileSelectionView:
         self.tree.set(item_id, 'selected', '✔' if is_selected else '')
 
     def populate_tree(self, path):
-        self.path_input.delete(0, tk.END)
+        self.path_input.delete(0, tkb.END)
         self.path_input.insert(0, path)
         self.tree.delete(*self.tree.get_children())
         self.emoji_assigner = EmojiAssigner()
