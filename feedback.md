@@ -1,0 +1,1 @@
+Cuando pasamos a la segunda ventana para las instrucciones, me si presionamos el botón get prompt, no conseguimos nada, es decir, no carga la ventana siguiente para obtener el system prompt, puede arreglarlo para pasar al siguiente paso de la implementación :o.
