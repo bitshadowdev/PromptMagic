@@ -24,7 +24,6 @@ class MainWindow:
         self.notebook = ttk.Notebook(self.root)
         self.notebook.pack(pady=10, padx=10, fill="both", expand=True)
 
-        # Es importante que FileSelectionView se cree para que el menú "Open Folder" funcione
         self.file_selection_view = FileSelectionView(self.notebook)
         self.openapi_view = OpenAPIView(self.notebook)
 
@@ -39,27 +38,21 @@ class MainWindow:
         self.file_selection_view.open_folder_dialog()
 
     def show_prompt_view(self):
-        """
-        Transición a la vista del prompt.
-        ¡Aquí está la corrección! No guardamos nada, solo verificamos.
-        """
-        # 1. Obtiene los archivos seleccionados directamente desde el estado en memoria.
+        """Transición a la vista del prompt."""
         selected_files = self.state.file_tree.get_selected_files()
         
-        # 2. Si no hay nada seleccionado, muestra la advertencia.
         if not selected_files:
             messagebox.showwarning("No Selection", "Please select at least one file before proceeding.")
             return
         
-        # 3. Si hay selección, simplemente procede a la siguiente ventana.
-        #    La información ya está en AppState, lista para ser usada.
         print(f"DEBUG: Proceeding to next view with {len(selected_files)} files selected in memory.")
         self.root.withdraw()
         top = Toplevel(self.root)
         top.title("Compose Prompt")
         top.geometry("800x600")
         
-        prompt_view = PromptView(top, self.root) # Pasamos la raíz para poder volver
+        # Le pasamos la instancia de sí misma (self) a PromptView
+        prompt_view = PromptView(top, self.root, self) 
         prompt_view.frame.pack(fill="both", expand=True)
 
         def on_close():
