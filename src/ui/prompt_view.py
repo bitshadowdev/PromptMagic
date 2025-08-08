@@ -4,8 +4,9 @@ from src.core.app_state import AppState
 from src.ui.result_view import ResultView
 
 class PromptView:
-    def __init__(self, parent, main_root, main_window_instance):
+    def __init__(self, parent, context_content, main_root, main_window_instance):
         self.parent = parent
+        self.context_content = context_content # Recibe el contenido ya generado
         self.main_root = main_root
         self.main_window_instance = main_window_instance
         self.frame = ttk.Frame(parent)
@@ -31,12 +32,9 @@ class PromptView:
     def show_result_view(self):
         """Genera el prompt final y muestra la vista de resultados."""
         prompt_template = self.text_area.get("1.0", tk.END).strip()
-        context_content = self.state.file_tree.get_selected_files_markdown()
-
-        if not context_content:
-            context_content = "WARNING: No files were selected or content could not be loaded."
         
-        final_prompt_content = prompt_template.replace("{context}", context_content)
+        # Simplemente reemplaza {context} con el contenido que ya recibimos
+        final_prompt_content = prompt_template.replace("{context}", self.context_content)
 
         self.parent.destroy()
 
@@ -44,6 +42,5 @@ class PromptView:
         top.title("Prompt Result")
         top.geometry("900x700")
         
-        # --- ¡Nuevo! Pasamos la plantilla y el contenido final ---
         result_view = ResultView(top, final_prompt_content, prompt_template, self.main_root, self.main_window_instance)
         result_view.frame.pack(fill="both", expand=True)
