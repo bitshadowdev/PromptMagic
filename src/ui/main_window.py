@@ -38,21 +38,24 @@ class MainWindow:
         self.file_selection_view.open_folder_dialog()
 
     def show_prompt_view(self):
-        """Transición a la vista del prompt."""
+        """
+        Transición a la vista del prompt, guardando las rutas seleccionadas.
+        """
         selected_files = self.state.file_tree.get_selected_files()
         
         if not selected_files:
             messagebox.showwarning("No Selection", "Please select at least one file before proceeding.")
             return
         
-        print(f"DEBUG: Proceeding to next view with {len(selected_files)} files selected in memory.")
+        # --- ¡Nuevo! Guardamos las rutas para la función de refresco ---
+        self.state.temp_storage.save_selected_paths(selected_files)
+        
         self.root.withdraw()
         top = Toplevel(self.root)
         top.title("Compose Prompt")
         top.geometry("800x600")
         
-        # Le pasamos la instancia de sí misma (self) a PromptView
-        prompt_view = PromptView(top, self.root, self) 
+        prompt_view = PromptView(top, self.root, self)
         prompt_view.frame.pack(fill="both", expand=True)
 
         def on_close():

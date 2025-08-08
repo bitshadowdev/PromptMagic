@@ -1,100 +1,44 @@
 import os
 import tempfile
 import json
-from typing import Dict, Any
+from typing import List
+from src.core.file_tree import FileNode
 
 class TempStorage:
-    """Handles temporary storage of selected files content during the workflow"""
+    """Maneja el almacenamiento temporal de las rutas de los archivos seleccionados."""
     
     def __init__(self):
         self.temp_dir = tempfile.mkdtemp(prefix="prompt_magic_")
-        self.content_file = os.path.join(self.temp_dir, "selected_content.json")
-        self.markdown_file = os.path.join(self.temp_dir, "content.md")
+        self.paths_file = os.path.join(self.temp_dir, "selected_paths.json")
+        print(f"DEBUG: Directorio temporal creado en: {self.temp_dir}")
         
-    def save_selected_files(self, file_tree):
-        """Save selected files and their markdown content to temporary storage"""
-        selected_files = file_tree.get_selected_files()
-        content_data = []
-        markdown_parts = []
-        
-        print(f"DEBUG: Saving {len(selected_files)} selected files to temp storage")
-        
-        for file_node in selected_files:
-            # Ensure content is loaded
-            if file_node.content is None:
-                file_node.load_content()
+    def save_selected_paths(self, file_nodes: List[FileNode]):
+        """Guarda las rutas de los nodos de archivo seleccionados en un archivo JSON."""
+        paths = [node.path for node in file_nodes]
+        print(f"DEBUG: Guardando {len(paths)} rutas en {self.paths_file}")
+        with open(self.paths_file, 'w', encoding='utf-8') as f:
+            json.dump(paths, f)
             
-            # Save file data
-            file_data = {
-                'name': file_node.name,
-                'path': file_node.path,
-                'extension': file_node.extension,
-                'emoji': file_node.emoji,
-                'content': file_node.content or "",
-                'size': file_node.size
-            }
-            content_data.append(file_data)
-            
-            # Generate markdown
-            markdown = file_node.to_markdown()
-            markdown_parts.append(markdown)
-            
-            print(f"DEBUG: Saved file {file_node.path} with content size: {len(file_node.content or '')}")
-        
-        # Save structured data to JSON
-        with open(self.content_file, 'w', encoding='utf-8') as f:
-            json.dump(content_data, f, indent=2, ensure_ascii=False)
-        
-        # Save combined markdown
-        combined_markdown = "\n\n".join(markdown_parts)
-        with open(self.markdown_file, 'w', encoding='utf-8') as f:
-            f.write(combined_markdown)
-            
-        print(f"DEBUG: Saved content to {self.content_file}")
-        print(f"DEBUG: Saved markdown to {self.markdown_file}")
-        
-        return combined_markdown
-    
-    def load_markdown_content(self) -> str:
-        """Load the combined markdown content from temporary storage"""
+    def load_selected_paths(self) -> List[str]:
+        """Carga las rutas de los archivos desde el archivo JSON temporal."""
         try:
-            with open(self.markdown_file, 'r', encoding='utf-8') as f:
-                content = f.read()
-                print(f"DEBUG: Loaded markdown content, size: {len(content)} characters")
-                return content
+            with open(self.paths_file, 'r', encoding='utf-8') as f:
+                paths = json.load(f)
+                print(f"DEBUG: Cargando {len(paths)} rutas desde {self.paths_file}")
+                return paths
         except FileNotFoundError:
-            print("DEBUG: No markdown content found in temp storage")
-            return ""
-        except Exception as e:
-            print(f"DEBUG: Error loading markdown content: {e}")
-            return ""
-    
-    def load_content_data(self) -> list:
-        """Load the structured content data from temporary storage"""
-        try:
-            with open(self.content_file, 'r', encoding='utf-8') as f:
-                data = json.load(f)
-                print(f"DEBUG: Loaded {len(data)} files from temp storage")
-                return data
-        except FileNotFoundError:
-            print("DEBUG: No content data found in temp storage")
+            print("DEBUG: No se encontró el archivo de rutas temporales.")
             return []
         except Exception as e:
-            print(f"DEBUG: Error loading content data: {e}")
+            print(f"DEBUG: Error al cargar las rutas temporales: {e}")
             return []
-    
+            
     def cleanup(self):
-        """Clean up temporary files"""
+        """Limpia los archivos y el directorio temporal."""
         try:
-            if os.path.exists(self.content_file):
-                os.remove(self.content_file)
-            if os.path.exists(self.markdown_file):
-                os.remove(self.markdown_file)
+            if os.path.exists(self.paths_file):
+                os.remove(self.paths_file)
             os.rmdir(self.temp_dir)
-            print(f"DEBUG: Cleaned up temp directory: {self.temp_dir}")
+            print(f"DEBUG: Directorio temporal {self.temp_dir} limpiado.")
         except Exception as e:
-            print(f"DEBUG: Error cleaning up temp files: {e}")
-    
-    def get_temp_dir(self) -> str:
-        """Get the temporary directory path"""
-        return self.temp_dir
+            print(f"DEBUG: Error al limpiar los archivos temporales: {e}")

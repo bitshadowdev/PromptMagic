@@ -7,7 +7,7 @@ class PromptView:
     def __init__(self, parent, main_root, main_window_instance):
         self.parent = parent
         self.main_root = main_root
-        self.main_window_instance = main_window_instance # Guardamos la instancia
+        self.main_window_instance = main_window_instance
         self.frame = ttk.Frame(parent)
         self.state = AppState()
 
@@ -25,7 +25,6 @@ class PromptView:
         get_prompt_button.pack(side="right")
 
     def go_back(self):
-        """Regresa a la ventana principal de selección de archivos."""
         self.main_root.deiconify()
         self.parent.destroy()
 
@@ -45,6 +44,6 @@ class PromptView:
         top.title("Prompt Result")
         top.geometry("900x700")
         
-        # Le pasamos la instancia de MainWindow a ResultView
-        result_view = ResultView(top, final_prompt_content, self.main_root, self.main_window_instance)
+        # --- ¡Nuevo! Pasamos la plantilla y el contenido final ---
+        result_view = ResultView(top, final_prompt_content, prompt_template, self.main_root, self.main_window_instance)
         result_view.frame.pack(fill="both", expand=True)
