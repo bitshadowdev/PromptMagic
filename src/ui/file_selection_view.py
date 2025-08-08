@@ -11,6 +11,7 @@ class FileSelectionView:
         self.frame = ttk.Frame(parent)
         self.state = AppState()
 
+        # Path selection frame
         path_frame = ttk.Frame(self.frame)
         path_frame.pack(fill=tk.X, padx=5, pady=5)
 
@@ -20,30 +21,32 @@ class FileSelectionView:
         browse_button = ttk.Button(path_frame, text="Browse...", command=self.open_folder_dialog)
         browse_button.pack(side=tk.LEFT)
 
-        # Configure the tree with a checkbox column
-        self.tree = ttk.Treeview(self.frame, columns=('selected', 'name'), show='tree')
-        self.tree.heading('#0', text='')
-        self.tree.column('#0', width=0, stretch=tk.NO)  # Hide the first column
-        self.tree.heading('selected', text='')
-        self.tree.column('selected', width=30, anchor='center')
-        self.tree.heading('name', text='Name')
-        self.tree.column('name', width=400, anchor='w')
+        # Tree configuration with proper hierarchy display
+        tree_frame = ttk.Frame(self.frame)
+        tree_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=(0,5))
+
+        self.tree = ttk.Treeview(tree_frame, show='tree headings', columns=('selected',))
+        self.tree.heading('#0', text='Name')
+        self.tree.heading('selected', text='Selected')
+        self.tree.column('#0', width=400, anchor='w')
+        self.tree.column('selected', width=80, anchor='center')
+
+        # Add scrollbars
+        v_scrollbar = ttk.Scrollbar(tree_frame, orient="vertical", command=self.tree.yview)
+        v_scrollbar.pack(side="right", fill="y")
         
-        self.tree.pack(fill=tk.BOTH, expand=True, padx=5, pady=(0,5))
+        h_scrollbar = ttk.Scrollbar(tree_frame, orient="horizontal", command=self.tree.xview)
+        h_scrollbar.pack(side="bottom", fill="x")
         
-        # Add scrollbar
-        scrollbar = ttk.Scrollbar(self.tree, orient="vertical", command=self.tree.yview)
-        scrollbar.pack(side="right", fill="y")
-        self.tree.configure(yscrollcommand=scrollbar.set)
-        
+        self.tree.configure(yscrollcommand=v_scrollbar.set, xscrollcommand=h_scrollbar.set)
+        self.tree.pack(side="left", fill="both", expand=True)
+
         parent.add(self.frame, text="Select Files")
 
-        # Bind single click to toggle selection
+        # Bind click events
         self.tree.bind("<Button-1>", self.on_tree_click)
         
-        # Store item IDs for quick lookup
-        self.item_ids = {}
-        
+        # Initialize with current directory
         self.populate_tree(os.path.abspath('.'))
 
     def open_folder_dialog(self):
@@ -58,99 +61,143 @@ class FileSelectionView:
             item = self.tree.identify_row(event.y)
             column = self.tree.identify_column(event.x)
             
-            if column == "#1":  # Checkbox column
+            if item and column == "#2":  # Selected column
                 self.toggle_item_selection(item)
 
     def toggle_item_selection(self, item_id):
         """Toggle the selection state of an item"""
-        # Get the file path from the item's tags
-        file_path = self.tree.item(item_id, 'tags')[0]
-        file_node = self.state.file_tree.get_node_by_path(file_path)
-        
-        if file_node:
-            # Toggle the selection state
-            file_node.is_selected = not file_node.is_selected
-            
-            # Update the visual state
-            self.update_tree_item_selection(item_id, file_node.is_selected)
-            
-            # If it's a directory, select/deselect all children
-            if file_node.is_directory:
-                self._toggle_children_selection(item_id, file_node.is_selected)
-
-    def _toggle_children_selection(self, parent_id, selected):
-        """Recursively toggle selection of all children in the tree"""
-        for child_id in self.tree.get_children(parent_id):
-            file_path = self.tree.item(child_id, 'tags')[0]
+        try:
+            # Get the file path from the item's tags
+            tags = self.tree.item(item_id, 'tags')
+            if not tags:
+                return
+                
+            file_path = tags[0]
             file_node = self.state.file_tree.get_node_by_path(file_path)
+            
             if file_node:
-                file_node.is_selected = selected
-                self.update_tree_item_selection(child_id, selected)
+                # Toggle the selection state
+                file_node.is_selected = not file_node.is_selected
+                
+                print(f"DEBUG: Toggled selection for {file_path} -> {file_node.is_selected}")
+                
+                # Load content if it's a file and now selected
+                if file_node.is_selected and not file_node.is_directory:
+                    file_node.load_content()
+                    print(f"DEBUG: Content loaded for {file_path}, size: {len(file_node.content or '') if file_node.content else 0} chars")
+                
+                # Update the visual state
+                self.update_tree_item_selection(item_id, file_node.is_selected)
+                
+                # If it's a directory, select/deselect all children
                 if file_node.is_directory:
-                    self._toggle_children_selection(child_id, selected)
+                    self._toggle_children_selection(item_id, file_node, file_node.is_selected)
+        except Exception as e:
+            print(f"DEBUG: Error in toggle_item_selection: {e}")
+
+    def _toggle_children_selection(self, parent_id, parent_node, selected):
+        """Recursively toggle selection of all children in the tree and data structure"""
+        # Toggle in tree view
+        for child_id in self.tree.get_children(parent_id):
+            try:
+                tags = self.tree.item(child_id, 'tags')
+                if not tags:
+                    continue
+                    
+                file_path = tags[0]
+                file_node = self.state.file_tree.get_node_by_path(file_path)
+                
+                if file_node:
+                    file_node.is_selected = selected
+                    
+                    if selected and not file_node.is_directory:
+                        file_node.load_content()
+                    
+                    self.update_tree_item_selection(child_id, selected)
+                    
+                    if file_node.is_directory:
+                        self._toggle_children_selection(child_id, file_node, selected)
+            except Exception as e:
+                print(f"DEBUG: Error toggling child: {e}")
 
     def update_tree_item_selection(self, item_id, is_selected):
         """Update the visual representation of a tree item's selection state"""
         self.tree.set(item_id, 'selected', '✓' if is_selected else '')
-        
-        # Also update the visual style if needed
-        if is_selected:
-            self.tree.item(item_id, tags=('selected',))
-        else:
-            self.tree.item(item_id, tags=())
 
     def populate_tree(self, path):
+        """Populate the tree with files and directories"""
         self.path_input.delete(0, tk.END)
         self.path_input.insert(0, path)
         self.tree.delete(*self.tree.get_children())
         self.emoji_assigner = EmojiAssigner()
-        # We will rebuild the tree in the app state
+        
+        # Reset the file tree in app state
         self.state.file_tree = FileTree()
-        self._populate_tree("", path, "", self.state.file_tree.root)
+        
+        print(f"DEBUG: Populating tree for path: {path}")
+        self._populate_tree("", path, None)
 
-    def _populate_tree(self, parent_tree_id, current_path, parent_node_path, file_tree_root):
-        """Populate the tree with files and directories"""
+    def _populate_tree(self, parent_tree_id, current_path, parent_node_path, indent_level=0):
+        """Populate the tree with files and directories with proper indentation"""
         try:
-            for item in sorted(os.listdir(current_path), key=lambda x: (not os.path.isdir(os.path.join(current_path, x)), x.lower())):
+            items = []
+            # Get all items and sort them (directories first, then files)
+            for item in os.listdir(current_path):
                 item_path = os.path.join(current_path, item)
                 is_directory = os.path.isdir(item_path)
+                items.append((item, item_path, is_directory))
+            
+            # Sort: directories first, then alphabetically
+            items.sort(key=lambda x: (not x[2], x[0].lower()))
+            
+            for item, item_path, is_directory in items:
+                # Create indentation for visual hierarchy
+                indent = "    " * indent_level  # 4 spaces per level
                 
                 if is_directory:
                     emoji = self.emoji_assigner.get_emoji("folder")
-                    node = self.state.file_tree.add_node(item, item_path, True, parent_node_path, emoji=emoji)
+                    # Add node to file tree
+                    node = self.state.file_tree.add_node(
+                        item, item_path, True, parent_node_path, emoji=emoji
+                    )
+                    
+                    # Add to tree view with indentation
+                    display_name = f"{indent}{emoji} {item}"
                     tree_id = self.tree.insert(
                         parent_tree_id, "end", 
-                        text=f"{emoji} {item}", 
-                        values=('', f"{emoji} {item}"),
+                        text=display_name,
+                        values=('',),
                         tags=(item_path,),
                         open=False
                     )
-                    # Store the mapping from path to tree ID
-                    self.item_ids[item_path] = tree_id
+                    
+                    print(f"DEBUG: Added directory: {item_path}")
                     
                     # Recursively populate the directory
-                    self._populate_tree(tree_id, item_path, item_path, file_tree_root)
+                    self._populate_tree(tree_id, item_path, item_path, indent_level + 1)
                 else:
                     _, extension = os.path.splitext(item)
                     emoji = self.emoji_assigner.get_emoji(extension)
                     size = os.path.getsize(item_path)
+                    
+                    # Add node to file tree
                     node = self.state.file_tree.add_node(
                         item, item_path, False, parent_node_path, 
                         size=size, extension=extension, emoji=emoji
                     )
+                    
+                    # Add to tree view with indentation
+                    display_name = f"{indent}{emoji} {item}"
                     tree_id = self.tree.insert(
                         parent_tree_id, "end", 
-                        text=item,
-                        values=('', f"{emoji} {item}"),
+                        text=display_name,
+                        values=('',),
                         tags=(item_path,)
                     )
-                    # Store the mapping from path to tree ID
-                    self.item_ids[item_path] = tree_id
                     
-                    # Update selection state if needed
-                    if node.is_selected:
-                        self.update_tree_item_selection(tree_id, True)
-                        
-        except PermissionError:
-            # Skip directories we don't have permission to access
-            pass
+                    print(f"DEBUG: Added file: {item_path} (extension: {extension})")
+                    
+        except PermissionError as e:
+            print(f"DEBUG: Permission denied for {current_path}: {e}")
+        except Exception as e:
+            print(f"DEBUG: Error populating tree: {e}")
